@@ -1,37 +1,46 @@
 const express = require('express');
-const dotEnv = require('dotenv');
 const mongoose = require('mongoose');
-const vendorRoutes = require('./routes/vendorRoutes.js');
-const bodyParser = require('body-parser');
-const firmRoutes = require('./routes/firmRoutes');
-const productRoutes = require('./routes/productRoutes');
-const path = require('path')
-const cors = require('cors');
+const cors = require('cors'); // For handling CORS issues
+const dotEnv = require('dotenv');
+const developerRoutes = require('./routes/developer'); // Adjust the path as needed
 
-const app = express()
-
-
-const PORT = process.env.PORT || 4000;
-
+// Load environment variables
 dotEnv.config();
-app.use(cors())
 
-mongoose.connect(process.env.MONGO_URI)
-.then(()=> console.log("mongodb connected successfully"))
-.catch((error) => console.log(error))
+const app = express();
 
-app.use(bodyParser.json());
-app.use('/vendor',vendorRoutes);
-app.use('/firm', firmRoutes)
-app.use('/product',productRoutes)
-app.use('/uploads', express.static('uploads'));
+// Connect to MongoDB
+const mongoURI = process.env.MONGO_URI;
 
+mongoose.connect(mongoURI)
+.then(() => console.log('MongoDB connected'))
+.catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1); // Exit process with failure
+});
 
+// Middleware
+app.use(cors()); // Allow cross-origin requests
+app.use(express.json()); // Parse JSON request bodies
 
-app.listen(PORT,() =>{
-    console.log(`server started running successfully ${PORT}`)
-})
+// Routes
+app.use('/api/developers', developerRoutes);
 
-app.use('/',(req,res) => {
-    res.send("<h1>Welcome to Vendor Dashboard</h1>")
-})
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
+
+// Handle Mongoose connection events
+mongoose.connection.on('connected', () => {
+    console.log('Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('Mongoose connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('Mongoose disconnected from MongoDB');
+});
